@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="12" y="32" width="72" height="40" rx="8" fill="#F3F4F6" stroke="#CBD5E1" stroke-width="2"/>
+  <rect x="24" y="40" width="48" height="24" rx="4" fill="#E0E7EF"/>
+  <circle cx="36" cy="72" r="4" fill="#A5B4FC"/>
+  <circle cx="60" cy="72" r="4" fill="#A5B4FC"/>
+  <path d="M32 32V24C32 19.5817 35.5817 16 40 16H56C60.4183 16 64 19.5817 64 24V32" stroke="#A5B4FC" stroke-width="2"/>
+  <text x="48" y="60" text-anchor="middle" fill="#94A3B8" font-size="12" font-family="Arial" dy=".3em">Sin productos</text>
+</svg>
