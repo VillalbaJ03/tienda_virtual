@@ -1,17 +1,18 @@
 import { Request, Response } from "express";
-import { getRepository } from "typeorm";
+import { AppDataSource } from "../config/data-source";
 import { Carrito } from "../models/Carrito";
 
-export const obtenerCarrito = async (req: Request, res: Response) => {
+export const obtenerCarrito = async (req: Request, res: Response): Promise<void> => {
     // @ts-ignore
     const usuarioId = req.user.id;
-    const carritoRepo = getRepository(Carrito);
+    const carritoRepo = AppDataSource.getRepository(Carrito);
     const carrito = await carritoRepo.findOne({
         where: { cliente: { id: usuarioId }, estado: 'activo' },
         relations: ['items', 'items.producto']
     });
     if (!carrito) {
-        return res.json({ id: null, estado: 'activo', items: [] });
+        res.json({ id: null, estado: 'activo', items: [] });
+        return;
     }
     res.json(carrito);
 };

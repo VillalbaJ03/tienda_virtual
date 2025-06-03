@@ -6,7 +6,7 @@ import { Producto } from '../models/Producto';
 import { authenticate } from '../middlewares/authMiddleware';
 import { authorizeAdmin } from '../middlewares/authorizeAdmin';
 import adminProductoRoutes from './admin/productoRoutes';
-import { crearUsuario, actualizarUsuario } from '../controllers/usuarioController';
+import { crearUsuario, actualizarUsuario, eliminarUsuario } from '../controllers/usuarioController';
 
 const router = Router();
 
@@ -26,6 +26,8 @@ router.get('/usuarios', async (_req, res) => {
 router.post('/usuarios', authenticate, authorizeAdmin, crearUsuario);
 // Actualizar usuario (solo admin)
 router.put('/usuarios/:id', authenticate, authorizeAdmin, actualizarUsuario);
+// Eliminar usuario (solo admin)
+router.delete('/usuarios/:id', authenticate, authorizeAdmin, eliminarUsuario);
 
 // Reportes (placeholder)
 router.get('/reportes/ventas', async (_req, res) => {

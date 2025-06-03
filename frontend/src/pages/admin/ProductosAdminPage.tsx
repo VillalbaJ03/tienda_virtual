@@ -9,6 +9,7 @@ interface Producto {
   nombre: string;
   precio: number;
   stock: number;
+  imagenUrl?: string;
 }
 
 export default function ProductosAdminPage() {
@@ -120,6 +121,7 @@ export default function ProductosAdminPage() {
             <table className="min-w-full">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left">Imagen</th>
                   <th className="px-6 py-3 text-left">Nombre</th>
                   <th className="px-6 py-3 text-left">Precio</th>
                   <th className="px-6 py-3 text-left">Stock</th>
@@ -129,6 +131,23 @@ export default function ProductosAdminPage() {
               <tbody className="divide-y divide-gray-200">
                 {productos.map((prod) => (
                   <tr key={prod.id}>
+                    <td className="px-6 py-4">
+                      {editProdId === prod.id ? (
+                        <input
+                          type="url"
+                          value={editProdData.imagenUrl ?? prod.imagenUrl ?? ''}
+                          onChange={e => setEditProdData({ ...editProdData, imagenUrl: e.target.value })}
+                          className="border rounded p-1 w-48"
+                          placeholder="https://..."
+                        />
+                      ) : (
+                        prod.imagenUrl ? (
+                          <img src={prod.imagenUrl} alt={prod.nombre} className="h-12 w-12 object-contain rounded" onError={e => (e.currentTarget.style.display = 'none')} />
+                        ) : (
+                          <span className="text-gray-400 italic">Sin imagen</span>
+                        )
+                      )}
+                    </td>
                     <td className="px-6 py-4">
                       {editProdId === prod.id ? (
                         <input

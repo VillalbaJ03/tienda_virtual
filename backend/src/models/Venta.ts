@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinColumn } from 'typeorm';
 import { Carrito } from './Carrito';
 import { Cliente } from './Cliente';
 
@@ -8,9 +8,11 @@ export class Venta {
   id!: number;
 
   @ManyToOne(() => Carrito, { eager: true })
+  @JoinColumn({ name: "carrito_id" })
   carrito!: Carrito;
 
   @ManyToOne(() => Cliente, { eager: true })
+  @JoinColumn({ name: "usuario_id" })
   usuario!: Cliente;
 
   @Column('decimal', { precision: 10, scale: 2 })

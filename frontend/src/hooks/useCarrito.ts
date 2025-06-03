@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 export default function useCarrito() {
   const [carrito, setCarrito] = useState([]);
@@ -20,8 +21,9 @@ export default function useCarrito() {
       const response = await axios.get('/api/carrito', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setCarrito(response.data.items);
-      setContador(response.data.items.reduce((sum, item) => sum + item.cantidad, 0));
+      const items = Array.isArray(response.data.items) ? response.data.items : [];
+      setCarrito(items);
+      setContador(items.reduce((sum, item) => sum + item.cantidad, 0));
     } catch (error) {
       console.error('Error fetching carrito:', error);
     }
@@ -35,10 +37,12 @@ export default function useCarrito() {
         { productoId, cantidad },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      toast.success('Producto agregado al carrito', { position: 'top-center' });
       await fetchCarrito();
       return true;
     } catch (error) {
       console.error('Error agregando al carrito:', error);
+      toast.error('Error al agregar al carrito', { position: 'top-center' });
       throw error;
     }
   };
@@ -65,8 +69,10 @@ export default function useCarrito() {
         headers: { Authorization: `Bearer ${token}` }
       });
       await fetchCarrito();
+      toast.success('Producto eliminado del carrito', { position: 'top-center' });
     } catch (error) {
       console.error('Error eliminando del carrito:', error);
+      toast.error('Error al eliminar del carrito', { position: 'top-center' });
     }
   };
 

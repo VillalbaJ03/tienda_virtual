@@ -26,7 +26,8 @@ export const getProductos = async (req: Request, res: Response) => {
 
 export const createProducto = async (req: Request, res: Response) => {
   const productoRepo = AppDataSource.getRepository(Producto);
-  const producto = productoRepo.create(req.body);
+  const { imagenUrl, ...rest } = req.body;
+  const producto = productoRepo.create({ ...rest, imagenUrl });
   await productoRepo.save(producto);
   res.status(201).json(producto);
 };
@@ -38,16 +39,24 @@ export const updateProducto = async (req: Request, res: Response): Promise<void>
     res.status(404).json({ error: 'Producto no encontrado' });
     return;
   }
-  productoRepo.merge(producto, req.body);
+  const { imagenUrl, ...rest } = req.body;
+  productoRepo.merge(producto, { ...rest, imagenUrl });
   await productoRepo.save(producto);
   res.json(producto);
 };
 
 export const deleteProducto = async (req: Request, res: Response): Promise<void> => {
   const productoRepo = AppDataSource.getRepository(Producto);
+  const itemCarritoRepo = AppDataSource.getRepository('ItemCarrito');
   const producto = await productoRepo.findOneBy({ id: Number(req.params.id) });
   if (!producto) {
     res.status(404).json({ error: 'Producto no encontrado' });
+    return;
+  }
+  // Verificar si hay items de carrito asociados
+  const itemsAsociados = await itemCarritoRepo.count({ where: { producto: { id: producto.id } } });
+  if (itemsAsociados > 0) {
+    res.status(400).json({ error: 'No se puede eliminar el producto porque está asociado a carritos o ventas.' });
     return;
   }
   await productoRepo.remove(producto);

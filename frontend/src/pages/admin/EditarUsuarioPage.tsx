@@ -54,10 +54,12 @@ export default function EditarUsuarioPage() {
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const token = user.token || '';
-      await axios.put(`/api/admin/usuarios/${id}`, {
-        ...form,
-        password: form.password || undefined
-      }, {
+      // Solo enviar password si el campo no está vacío
+      const payload: any = { ...form };
+      if (!form.password) {
+        delete payload.password;
+      }
+      await axios.put(`/api/admin/usuarios/${id}`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('Usuario actualizado correctamente', { position: 'top-center' });

@@ -43,8 +43,7 @@ export default function ProductoCard({ producto }: { producto: any }) {
     }
     setLoading(true);
     try {
-      const success = await agregarAlCarrito(producto.id);
-      if (success) toast.success('Producto agregado al carrito');
+      await agregarAlCarrito(producto.id);
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Error al agregar al carrito');
     } finally {
@@ -59,6 +58,7 @@ export default function ProductoCard({ producto }: { producto: any }) {
           src={producto.imagenUrl || '/placeholder-product.jpg'}
           alt={producto.nombre}
           className="h-40 w-auto object-contain mx-auto"
+          onError={e => (e.currentTarget.style.display = 'none')}
         />
       </div>
       <div className="p-4 flex-1 flex flex-col">

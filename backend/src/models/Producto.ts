@@ -28,4 +28,7 @@ export class Producto {
 
     @Column("decimal", { precision: 5, scale: 2, default: 0 })
     descuento!: number;
+
+    @Column({ type: "varchar", length: 255, nullable: true })
+    imagenUrl?: string;
 }

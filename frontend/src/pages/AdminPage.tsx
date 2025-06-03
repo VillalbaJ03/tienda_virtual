@@ -7,6 +7,8 @@ import ProductosMasVendidosGrafico from '../components/ProductosMasVendidosGrafi
 import CardStats from '../components/CardStats';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import ProductoFormModal from './admin/ProductoFormModal';
+import UsuarioFormModal from './admin/UsuarioFormModal';
 
 // Definiciones de tipos para productos y usuarios
 interface Producto {
@@ -59,6 +61,10 @@ export default function AdminPage() {
   const [editProdData, setEditProdData] = useState<Partial<Producto>>({});
   const [editProdLoading, setEditProdLoading] = useState(false);
   const [editProdError, setEditProdError] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [usuarioModalOpen, setUsuarioModalOpen] = useState(false);
+  const [productoEditar, setProductoEditar] = useState<Producto | null>(null);
+  const [usuarioEditar, setUsuarioEditar] = useState<Usuario | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -144,8 +150,10 @@ export default function AdminPage() {
       });
       setUsuarios(usuarios.filter(u => u.id !== id));
       toast.success('Usuario eliminado correctamente', { position: 'top-center' });
-    } catch (error) {
-      toast.error('Error al eliminar usuario', { position: 'top-center' });
+    } catch (error: any) {
+      // Mejor feedback: mostrar mensaje del backend si existe
+      const msg = error?.response?.data?.error || 'Error al eliminar usuario';
+      toast.error(msg, { position: 'top-center' });
     }
   };
 
@@ -156,7 +164,12 @@ export default function AdminPage() {
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const token = user.token || '';
-      const res = await axios.put(`/api/admin/usuarios/${id}`, editUserData, {
+      // Filtrar password vacío
+      const payload = { ...editUserData };
+      if ('password' in payload && (!payload.password || payload.password === '')) {
+        delete payload.password;
+      }
+      const res = await axios.put(`/api/admin/usuarios/${id}`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsuarios(usuarios.map(u => u.id === id ? { ...u, ...res.data } : u));
@@ -227,21 +240,7 @@ export default function AdminPage() {
             >
               <ArrowPathIcon className="h-5 w-5" />
             </button>
-            <button
-              className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-5 py-2 rounded-lg shadow-lg ml-4 font-semibold flex items-center gap-2 hover:from-pink-600 hover:to-purple-600 transition-all duration-200"
-              onClick={() => {
-                if (window.confirm('✨ ¿Seguro que quieres cerrar sesión y salir del panel de administración?\n¡Te esperamos pronto de vuelta!')) {
-                  localStorage.removeItem('user');
-                  localStorage.removeItem('token');
-                  navigate('/login');
-                }
-              }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3-3l-3-3m3 3H9m6 0l3 3" />
-              </svg>
-              Cerrar sesión
-            </button>
+            {/* Botón de cerrar sesión eliminado, ya está en el layout */}
           </div>
         </div>
 
@@ -301,8 +300,11 @@ export default function AdminPage() {
               <Tab.Panel>
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold text-gray-800">Gestión de Productos</h2>
-                  <button className="flex items-center px-3 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600">
-                    <PlusIcon className="h-4 w-4 mr-1" />
+                  <button
+                    onClick={() => { setProductoEditar(null); setModalOpen(true); }}
+                    className="flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-lg text-sm font-semibold shadow hover:from-indigo-700 hover:to-blue-700 transition-colors"
+                  >
+                    <PlusIcon className="h-4 w-4 mr-2" />
                     Nuevo Producto
                   </button>
                 </div>
@@ -322,7 +324,6 @@ export default function AdminPage() {
                       <thead className="bg-gray-50">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
@@ -338,142 +339,54 @@ export default function AdminPage() {
                           <tr key={prod.id}>
                             <td className="px-6 py-4 whitespace-nowrap">{prod.id}</td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              {editProdId === prod.id ? (
-                                <input
-                                  type="text"
-                                  value={editProdData.codigo ?? prod.codigo}
-                                  onChange={e => setEditProdData({ ...editProdData, codigo: e.target.value })}
-                                  className="border rounded p-1 w-24"
-                                />
-                              ) : (
-                                prod.codigo
-                              )}
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-14 w-14">
+                                  {prod.imagen ? (
+                                    <img className="h-14 w-14 rounded-xl object-cover border border-indigo-100 shadow-sm" src={prod.imagen} alt={prod.nombre} />
+                                  ) : (
+                                    <div className="h-14 w-14 rounded-xl bg-gray-200 flex items-center justify-center border border-gray-100">
+                                      <CubeIcon className="h-7 w-7 text-gray-400" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-base font-semibold text-gray-900">{prod.nombre}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">{prod.categoria}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">${prod.precio}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{prod.stock}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{prod.temporada}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${prod.estado === 'disponible' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                {prod.estado === 'disponible' ? 'Disponible' : 'Agotado'}
+                              </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              {editProdId === prod.id ? (
-                                <input
-                                  type="text"
-                                  value={editProdData.nombre ?? prod.nombre}
-                                  onChange={e => setEditProdData({ ...editProdData, nombre: e.target.value })}
-                                  className="border rounded p-1 w-32"
-                                />
+                              {prod.descuento > 0 ? (
+                                <span className="text-green-600 font-semibold">{prod.descuento}%</span>
                               ) : (
-                                prod.nombre
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {editProdId === prod.id ? (
-                                <input
-                                  type="text"
-                                  value={editProdData.categoria ?? prod.categoria}
-                                  onChange={e => setEditProdData({ ...editProdData, categoria: e.target.value })}
-                                  className="border rounded p-1 w-24"
-                                />
-                              ) : (
-                                prod.categoria
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {editProdId === prod.id ? (
-                                <input
-                                  type="number"
-                                  value={editProdData.precio ?? prod.precio}
-                                  onChange={e => setEditProdData({ ...editProdData, precio: Number(e.target.value) })}
-                                  className="border rounded p-1 w-20"
-                                />
-                              ) : (
-                                `$${prod.precio}`
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {editProdId === prod.id ? (
-                                <input
-                                  type="number"
-                                  value={editProdData.stock ?? prod.stock}
-                                  onChange={e => setEditProdData({ ...editProdData, stock: Number(e.target.value) })}
-                                  className="border rounded p-1 w-20"
-                                />
-                              ) : (
-                                prod.stock
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {editProdId === prod.id ? (
-                                <input
-                                  type="text"
-                                  value={editProdData.temporada ?? prod.temporada}
-                                  onChange={e => setEditProdData({ ...editProdData, temporada: e.target.value })}
-                                  className="border rounded p-1 w-24"
-                                />
-                              ) : (
-                                prod.temporada
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {editProdId === prod.id ? (
-                                <select
-                                  value={editProdData.estado ?? prod.estado}
-                                  onChange={e => setEditProdData({ ...editProdData, estado: e.target.value })}
-                                  className="border rounded p-1"
-                                >
-                                  <option value="disponible">Disponible</option>
-                                  <option value="agotado">Agotado</option>
-                                </select>
-                              ) : (
-                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${prod.estado === 'disponible' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                  {prod.estado === 'disponible' ? 'Disponible' : 'Agotado'}
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {editProdId === prod.id ? (
-                                <input
-                                  type="number"
-                                  value={editProdData.descuento ?? prod.descuento}
-                                  onChange={e => setEditProdData({ ...editProdData, descuento: Number(e.target.value) })}
-                                  className="border rounded p-1 w-16"
-                                />
-                              ) : (
-                                prod.descuento > 0 ? (
-                                  <span className="text-green-600 font-semibold">{prod.descuento}%</span>
-                                ) : (
-                                  <span className="text-gray-500">0%</span>
-                                )
+                                <span className="text-gray-500">0%</span>
                               )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              {editProdId === prod.id ? (
-                                <>
-                                  <button
-                                    className="text-green-600 hover:text-green-900 mr-2"
-                                    onClick={() => handleSaveProd(prod.id)}
-                                    disabled={editProdLoading}
-                                  >
-                                    Guardar
-                                  </button>
-                                  <button
-                                    className="text-gray-600 hover:text-gray-900"
-                                    onClick={() => { setEditProdId(null); setEditProdData({}); }}
-                                    disabled={editProdLoading}
-                                  >
-                                    Cancelar
-                                  </button>
-                                  {editProdError && <div className="text-red-600 text-xs mt-1">{editProdError}</div>}
-                                </>
-                              ) : (
-                                <>
-                                  <button
-                                    className="text-blue-600 hover:text-blue-900 mr-3"
-                                    onClick={() => { setEditProdId(prod.id); setEditProdData(prod); }}
-                                  >
-                                    <PencilIcon className="h-5 w-5" />
-                                  </button>
-                                  <button
-                                    className="text-red-600 hover:text-red-900" onClick={() => handleDeleteProducto(prod.id)}>
-                                      <TrashIcon className="h-5 w-5" />
-                                  </button>
-                                </>
-                              )}
+                              <div className="flex space-x-2 justify-end">
+                                <button
+                                  onClick={() => { setProductoEditar(prod); setModalOpen(true); }}
+                                  className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 rounded-full p-2 transition"
+                                  title="Editar"
+                                >
+                                  <PencilIcon className="h-5 w-5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteProducto(prod.id)}
+                                  className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 rounded-full p-2 transition"
+                                  title="Eliminar"
+                                >
+                                  <TrashIcon className="h-5 w-5" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -481,6 +394,12 @@ export default function AdminPage() {
                     </table>
                   </div>
                 )}
+                <ProductoFormModal
+                  open={modalOpen}
+                  onClose={() => { setModalOpen(false); setProductoEditar(null); }}
+                  onSuccess={() => { setModalOpen(false); setProductoEditar(null); refreshData('productos'); }}
+                  producto={productoEditar}
+                />
               </Tab.Panel>
 
               {/* Panel de Usuarios */}
@@ -488,13 +407,19 @@ export default function AdminPage() {
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold text-gray-800">Gestión de Usuarios</h2>
                   <button
-                    className="flex items-center px-3 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600"
-                    onClick={() => navigate('/admin/usuarios/nuevo')}
+                    onClick={() => { setUsuarioEditar(null); setUsuarioModalOpen(true); }}
+                    className="flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-lg text-sm font-semibold shadow hover:from-indigo-700 hover:to-blue-700 transition-colors"
                   >
-                    <PlusIcon className="h-4 w-4 mr-1" />
+                    <PlusIcon className="h-4 w-4 mr-2" />
                     Nuevo Usuario
                   </button>
                 </div>
+                <UsuarioFormModal
+                  open={usuarioModalOpen}
+                  onClose={() => { setUsuarioModalOpen(false); setUsuarioEditar(null); }}
+                  onSuccess={() => { setUsuarioModalOpen(false); setUsuarioEditar(null); refreshData('usuarios'); }}
+                  usuario={usuarioEditar}
+                />
                 
                 {loading.usuarios ? (
                   <div className="flex justify-center py-8">
@@ -524,107 +449,37 @@ export default function AdminPage() {
                         {usuarios.map((user) => (
                           <tr key={user.id}>
                             <td className="px-6 py-4 whitespace-nowrap">{user.id}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{user.nombre || '-'}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{user.direccion || '-'}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{user.telefono || '-'}</td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              {editUserId === user.id ? (
-                                <input
-                                  type="text"
-                                  value={editUserData.nombre ?? user.nombre ?? ''}
-                                  onChange={e => setEditUserData({ ...editUserData, nombre: e.target.value })}
-                                  className="border rounded p-1 w-32"
-                                />
-                              ) : (
-                                user.nombre || '-'
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {editUserId === user.id ? (
-                                <input
-                                  type="email"
-                                  value={editUserData.email ?? user.email}
-                                  onChange={e => setEditUserData({ ...editUserData, email: e.target.value })}
-                                  className="border rounded p-1 w-40"
-                                />
-                              ) : (
-                                user.email
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {editUserId === user.id ? (
-                                <input
-                                  type="text"
-                                  value={editUserData.direccion ?? user.direccion ?? ''}
-                                  onChange={e => setEditUserData({ ...editUserData, direccion: e.target.value })}
-                                  className="border rounded p-1 w-40"
-                                />
-                              ) : (
-                                user.direccion || '-'
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {editUserId === user.id ? (
-                                <input
-                                  type="text"
-                                  value={editUserData.telefono ?? user.telefono ?? ''}
-                                  onChange={e => setEditUserData({ ...editUserData, telefono: e.target.value })}
-                                  className="border rounded p-1 w-32"
-                                />
-                              ) : (
-                                user.telefono || '-'
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {editUserId === user.id ? (
-                                <select
-                                  value={editUserData.rol ?? user.rol}
-                                  onChange={e => setEditUserData({ ...editUserData, rol: e.target.value })}
-                                  className="border rounded p-1"
-                                >
-                                  <option value="cliente">Cliente</option>
-                                  <option value="admin">Administrador</option>
-                                </select>
-                              ) : (
-                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.rol === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
-                                  {user.rol === 'admin' ? 'Administrador' : 'Cliente'}
-                                </span>
-                              )}
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.rol === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                                {user.rol === 'admin' ? 'Administrador' : 'Cliente'}
+                              </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {user.fecha_registro ? new Date(user.fecha_registro).toLocaleString() : '—'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              {editUserId === user.id ? (
-                                <>
+                              <div className="flex space-x-2 justify-end">
+                                <button
+                                  onClick={() => { setUsuarioEditar(user); setUsuarioModalOpen(true); }}
+                                  className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 rounded-full p-2 transition"
+                                  title="Editar"
+                                >
+                                  <PencilIcon className="h-5 w-5" />
+                                </button>
+                                {user.rol !== 'admin' && (
                                   <button
-                                    className="text-green-600 hover:text-green-900 mr-2"
-                                    onClick={() => handleSaveUsuario(user.id)}
-                                    disabled={editLoading}
+                                    onClick={() => handleDeleteUsuario(user.id)}
+                                    className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 rounded-full p-2 transition"
+                                    title="Eliminar"
                                   >
-                                    Guardar
+                                    <TrashIcon className="h-5 w-5" />
                                   </button>
-                                  <button
-                                    className="text-gray-600 hover:text-gray-900"
-                                    onClick={() => { setEditUserId(null); setEditUserData({}); }}
-                                    disabled={editLoading}
-                                  >
-                                    Cancelar
-                                  </button>
-                                  {editError && <div className="text-red-600 text-xs mt-1">{editError}</div>}
-                                </>
-                              ) : (
-                                <>
-                                  <button
-                                    className="text-blue-600 hover:text-blue-900 mr-3"
-                                    onClick={() => { setEditUserId(user.id); setEditUserData(user); }}
-                                  >
-                                    <PencilIcon className="h-5 w-5" />
-                                  </button>
-                                  {user.rol !== 'admin' && (
-                                    <button className="text-red-600 hover:text-red-900" onClick={() => handleDeleteUsuario(user.id)}>
-                                      <TrashIcon className="h-5 w-5" />
-                                    </button>
-                                  )}
-                                </>
-                              )}
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))}

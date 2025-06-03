@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import useCarrito from '../hooks/useCarrito';
 import { useNavigate } from 'react-router-dom';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function CarritoPage() {
   // Tipar carrito como any[] para evitar errores de tipo
@@ -33,7 +34,7 @@ export default function CarritoPage() {
           <div className="space-y-4 mb-8">
             {carrito.map((item: any) => (
               <div key={item.id} className="flex flex-col md:flex-row items-center gap-4 bg-white rounded-xl shadow p-4 border border-gray-100">
-                <img src={item.producto?.imagenUrl || '/placeholder-product.jpg'} alt={item.producto?.nombre || 'Producto'} className="h-24 w-24 rounded-lg object-cover border" />
+                <img src={item.producto?.imagenUrl || '/placeholder-product.jpg'} alt={item.producto?.nombre || 'Producto'} className="h-24 w-24 rounded-lg object-cover border" onError={e => (e.currentTarget.style.display = 'none')} />
                 <div className="flex-1 w-full">
                   <h3 className="font-semibold text-lg mb-1">{item.producto?.nombre || 'Producto'}</h3>
                   <p className="text-sm text-gray-600 mb-1">{item.cantidad} x ${Number(item.producto?.precio || 0).toFixed(2)} {item.descuentoAplicado > 0 && (<span className="ml-1 text-xs text-green-500">({item.descuentoAplicado}% OFF)</span>)}</p>

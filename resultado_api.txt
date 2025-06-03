@@ -1,0 +1,25 @@
+﻿
+
+StatusCode        : 200
+StatusDescription : OK
+Content           : {"productos":[{"id":3,"nombre":"Zapatos Deportivos","categoria":"Ropa","precio":"59.99","descuento":"35.00","
+                    stock":0,"temporada":"baja","estado":"agotado"},{"id":2,"nombre":"Smartphone Samsung S21","...
+RawContent        : HTTP/1.1 200 OK
+                    Vary: Origin
+                    connection: close
+                    Content-Length: 482
+                    Content-Type: application/json; charset=utf-8
+                    Date: Mon, 02 Jun 2025 00:39:53 GMT
+                    ETag: W/"1e2-fqLTidogcGHaLA8m93owBmRtYho"
+                    X-...
+Forms             : {}
+Headers           : {[Vary, Origin], [connection, close], [Content-Length, 482], [Content-Type, application/json; 
+                    charset=utf-8]...}
+Images            : {}
+InputFields       : {}
+Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 482
+
+
+

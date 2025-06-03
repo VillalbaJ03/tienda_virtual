@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from "typeorm";
 import { Cliente } from "./Cliente";
 import { ItemCarrito } from "./ItemCarrito";
 
@@ -11,6 +11,7 @@ export class Carrito {
     estado!: "activo" | "completado" | "abandonado";
 
     @ManyToOne(() => Cliente, cliente => cliente.carritos)
+    @JoinColumn({ name: "usuario_id" })
     cliente!: Cliente;
 
     @OneToMany(() => ItemCarrito, item => item.carrito)

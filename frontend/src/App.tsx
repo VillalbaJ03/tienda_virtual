@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Layout from './components/Layout';
@@ -14,6 +14,10 @@ import RegistroPage from './pages/RegistroPage';
 import CuentaPage from './pages/CuentaPage';
 import AdminPage from './pages/AdminPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import FacturaPage from './pages/FacturaPage';
+import ProductoFormPage from './pages/admin/ProductoFormPage';
+import ContactoPage from './pages/ContactoPage';
+import PreguntasPage from './pages/PreguntasPage';
 
 function App() {
   return (
@@ -21,6 +25,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/productos" element={<ProductosPage />} />
+        <Route path="/ofertas" element={<ProductosPage ofertasOnly={true} />} />
         <Route path="/producto/:id" element={<ProductoDetallePage />} />
         <Route path="/carrito" element={<CarritoPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
@@ -33,6 +38,10 @@ function App() {
             <AdminPage />
           </ProtectedRoute>
         } />
+        <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
+        <Route path="/factura/:id" element={<FacturaPage />} />
+        <Route path="/contacto" element={<ContactoPage />} />
+        <Route path="/preguntas" element={<PreguntasPage />} />
         <Route path="*" element={<HomePage />} />
       </Routes>
       <ToastContainer position="bottom-right" autoClose={2000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />

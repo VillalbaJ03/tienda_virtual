@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import UsuarioFormModal from "./UsuarioFormModal";
 
 // Definir el tipo Cliente para tipar correctamente el estado
 interface Cliente {
@@ -14,18 +15,22 @@ interface Cliente {
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState<{ direccion: string; telefono: string }>({
-    direccion: '',
-    telefono: ''
+  const [formData, setFormData] = useState<{
+    direccion: string;
+    telefono: string;
+  }>({
+    direccion: "",
+    telefono: "",
   });
+  const [modalOpen, setModalOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchClientes = async () => {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const token = user.token || '';
-      const res = await axios.get('/api/clientes', {
-        headers: { Authorization: `Bearer ${token}` }
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const token = user.token || "";
+      const res = await axios.get("/api/clientes", {
+        headers: { Authorization: `Bearer ${token}` },
       });
       setClientes(res.data);
     };
@@ -34,21 +39,23 @@ export default function ClientesPage() {
 
   const handleUpdate = async (id: number) => {
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const token = user.token || '';
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const token = user.token || "";
       await axios.put(`/api/clientes/${id}`, formData, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       setEditingId(null);
       // Refrescar lista
-      const res = await axios.get('/api/clientes', {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await axios.get("/api/clientes", {
+        headers: { Authorization: `Bearer ${token}` },
       });
       setClientes(res.data);
-      toast.success('Cliente actualizado correctamente', { position: 'top-center' });
+      toast.success("Cliente actualizado correctamente", {
+        position: "top-center",
+      });
     } catch (error) {
-      console.error('Error actualizando cliente', error);
-      toast.error('Error al actualizar cliente', { position: 'top-center' });
+      console.error("Error actualizando cliente", error);
+      toast.error("Error al actualizar cliente", { position: "top-center" });
     }
   };
 
@@ -56,9 +63,20 @@ export default function ClientesPage() {
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Gestión de Clientes</h1>
-        <Link to="/admin/usuarios/nuevo" className="bg-blue-500 text-white px-4 py-2 rounded">
+        <button
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+          onClick={() => setModalOpen(true)}
+        >
           Crear Nuevo Usuario
-        </Link>
+        </button>
+        <UsuarioFormModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onSuccess={() => {
+            setModalOpen(false);
+            window.location.reload();
+          }}
+        />
       </div>
       <table className="min-w-full bg-white rounded-lg overflow-hidden">
         <thead className="bg-gray-100">
@@ -70,7 +88,7 @@ export default function ClientesPage() {
           </tr>
         </thead>
         <tbody>
-          {clientes.map(cliente => (
+          {clientes.map((cliente) => (
             <tr key={cliente.id} className="border-t">
               <td className="py-2 px-4">{cliente.email}</td>
               <td className="py-2 px-4">
@@ -78,11 +96,13 @@ export default function ClientesPage() {
                   <input
                     type="text"
                     value={formData.direccion}
-                    onChange={(e) => setFormData({...formData, direccion: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, direccion: e.target.value })
+                    }
                     className="border p-1 w-full"
                   />
                 ) : (
-                  cliente.direccion || 'No especificada'
+                  cliente.direccion || "No especificada"
                 )}
               </td>
               <td className="py-2 px-4">
@@ -90,22 +110,26 @@ export default function ClientesPage() {
                   <input
                     type="text"
                     value={formData.telefono}
-                    onChange={(e) => setFormData({...formData, telefono: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, telefono: e.target.value })
+                    }
                     className="border p-1 w-full"
                   />
                 ) : (
-                  cliente.telefono || 'No especificado'
+                  cliente.telefono || "No especificado"
                 )}
               </td>
               <td className="px-6 py-4 text-right">
                 <button
                   className="text-blue-600 hover:text-blue-900 mr-3"
-                  onClick={() => navigate(`/admin/usuarios/editar/${cliente.id}`)}
+                  onClick={() =>
+                    navigate(`/admin/usuarios/editar/${cliente.id}`)
+                  }
                 >
                   Editar
                 </button>
                 {editingId === cliente.id ? (
-                  <button 
+                  <button
                     onClick={() => handleUpdate(cliente.id)}
                     className="text-green-600"
                   >

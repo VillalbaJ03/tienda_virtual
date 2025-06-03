@@ -5,11 +5,15 @@ import bcrypt from 'bcrypt';
 
 export const crearUsuario = async (req: Request, res: Response) => {
   console.log('LOG CREAR USUARIO ADMIN BODY:', req.body); // <-- Log explícito
-  const { email, password, rol, direccion, telefono } = req.body;
+  const { email, password, rol, direccion, telefono, nombre } = req.body;
 
   // Validaciones básicas
   if (!['admin', 'cliente'].includes(rol)) {
     res.status(400).json({ error: 'Rol inválido' });
+    return;
+  }
+  if (!nombre || typeof nombre !== 'string' || nombre.trim() === '') {
+    res.status(400).json({ error: 'El nombre es obligatorio' });
     return;
   }
 
@@ -29,7 +33,8 @@ export const crearUsuario = async (req: Request, res: Response) => {
     password: hashedPassword,
     rol,
     direccion,
-    telefono
+    telefono,
+    nombre
   });
 
   await usuarioRepo.save(usuario);
@@ -37,7 +42,7 @@ export const crearUsuario = async (req: Request, res: Response) => {
 };
 
 export const actualizarUsuario = async (req: Request, res: Response): Promise<void> => {
-  const { email, password, rol, direccion, telefono } = req.body;
+  const { email, password, rol, direccion, telefono, nombre } = req.body;
   const usuarioRepo = AppDataSource.getRepository(Cliente);
   const usuario = await usuarioRepo.findOne({ where: { id: Number(req.params.id) } });
   if (!usuario) {
@@ -45,6 +50,7 @@ export const actualizarUsuario = async (req: Request, res: Response): Promise<vo
     return;
   }
   if (email) usuario.email = email;
+  if (nombre) usuario.nombre = nombre;
   if (rol && ['admin', 'cliente'].includes(rol)) usuario.rol = rol;
   if (direccion) usuario.direccion = direccion;
   if (telefono) usuario.telefono = telefono;
@@ -55,8 +61,38 @@ export const actualizarUsuario = async (req: Request, res: Response): Promise<vo
   res.json({
     id: usuario.id,
     email: usuario.email,
+    nombre: usuario.nombre,
     rol: usuario.rol,
     direccion: usuario.direccion,
     telefono: usuario.telefono
   });
+};
+
+export const eliminarUsuario = async (req: Request, res: Response): Promise<void> => {
+  const usuarioRepo = AppDataSource.getRepository(Cliente);
+  const ventaRepo = AppDataSource.getRepository('Venta');
+  const usuarioId = Number(req.params.id);
+  const usuario = await usuarioRepo.findOne({ where: { id: usuarioId }, relations: ['carritos'] });
+  if (!usuario) {
+    res.status(404).json({ error: 'Usuario no encontrado' });
+    return;
+  }
+  // Verificar si tiene ventas asociadas
+  const ventas = await ventaRepo.count({ where: { usuario: { id: usuarioId } } });
+  if (ventas > 0) {
+    res.status(400).json({ error: 'No se puede eliminar el usuario porque tiene ventas asociadas.' });
+    return;
+  }
+  try {
+    // Eliminar carritos asociados (si existen)
+    if (usuario.carritos && usuario.carritos.length > 0) {
+      for (const carrito of usuario.carritos) {
+        await AppDataSource.getRepository('Carrito').delete(carrito.id);
+      }
+    }
+    await usuarioRepo.delete(usuarioId);
+    res.json({ mensaje: 'Usuario eliminado correctamente' });
+  } catch (error: any) {
+    res.status(500).json({ error: 'No se pudo eliminar el usuario por un error interno.' });
+  }
 };

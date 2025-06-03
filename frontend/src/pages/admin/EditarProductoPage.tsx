@@ -15,7 +15,7 @@ export default function EditarProductoPage() {
     temporada: '',
     estado: '',
     descuento: '',
-    imagen: ''
+    imagenUrl: ''
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -39,7 +39,7 @@ export default function EditarProductoPage() {
           temporada: prod.temporada || '',
           estado: prod.estado || '',
           descuento: prod.descuento?.toString() || '',
-          imagen: prod.imagen || ''
+          imagenUrl: prod.imagenUrl || ''
         });
       } catch (e) {
         setError('No se pudo cargar el producto');
@@ -117,8 +117,11 @@ export default function EditarProductoPage() {
           <input name="descuento" type="number" value={form.descuento} onChange={handleChange} className="w-full border rounded p-2" />
         </div>
         <div>
-          <label className="block font-medium">Imagen (URL)</label>
-          <input name="imagen" value={form.imagen} onChange={handleChange} className="w-full border rounded p-2" />
+          <label className="block font-medium">Imagen (URL)*</label>
+          <input name="imagenUrl" value={form.imagenUrl} onChange={handleChange} className="w-full border rounded p-2" required />
+          {form.imagenUrl && (
+            <img src={form.imagenUrl} alt="Vista previa" className="mt-2 h-32 object-contain border rounded" onError={e => (e.currentTarget.style.display = 'none')} />
+          )}
         </div>
         <div className="flex justify-end gap-2">
           <button type="button" onClick={() => navigate('/admin')} className="px-4 py-2 bg-gray-200 rounded">Cancelar</button>

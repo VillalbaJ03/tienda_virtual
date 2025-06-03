@@ -36,12 +36,27 @@ router.get("/", async (req: Request, res: Response) => {
             descuento: p.descuento,
             stock: p.stock,
             temporada: p.temporada,
-            estado: p.estado
+            estado: p.estado,
+            imagenUrl: p.imagenUrl // <-- AGREGADO
         }));
 
         res.json({ productos: productosTienda, total });
     } catch (error) {
         res.status(500).json({ error: "Error al obtener productos" });
+    }
+});
+
+// Obtener un producto por id
+router.get('/:id', async (req: Request, res: Response) => {
+    try {
+        const id = Number(req.params.id);
+        if (!id) return res.status(400).json({ error: 'ID inválido' });
+        const repo = productoRepo["repo"];
+        const producto = await repo.findOneBy({ id });
+        if (!producto) return res.status(404).json({ error: 'Producto no encontrado' });
+        res.json(producto);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener producto' });
     }
 });
 

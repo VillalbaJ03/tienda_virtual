@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 
-export default function ProductoFormPage() {
-  const { id } = useParams();
+export default function ProductoFormPage({ isModal = false, onSuccess, onClose, producto }: { isModal?: boolean, onSuccess?: () => void, onClose?: () => void, producto?: any }) {
+  const { id: paramId } = useParams();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     codigo: '',
@@ -12,6 +12,7 @@ export default function ProductoFormPage() {
     precio: '',
     stock: '',
     temporada: 'alta',
+    imagenUrl: '',
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -19,14 +20,24 @@ export default function ProductoFormPage() {
 
   // Si es edición, cargar datos existentes
   useEffect(() => {
-    if (id) {
+    if (producto) {
+      setFormData({
+        codigo: producto.codigo || '',
+        nombre: producto.nombre || '',
+        categoria: producto.categoria || 'Tecnología',
+        precio: producto.precio?.toString() || '',
+        stock: producto.stock?.toString() || '',
+        temporada: producto.temporada || 'alta',
+        imagenUrl: producto.imagenUrl || producto.imagen || '',
+      });
+    } else if (paramId) {
       const fetchProducto = async () => {
         try {
           setLoading(true);
           setError('');
           const user = JSON.parse(localStorage.getItem('user') || '{}');
           const token = user.token || '';
-          const res = await axios.get(`/api/admin/productos/${id}`, {
+          const res = await axios.get(`/api/admin/productos/${paramId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           setFormData({
@@ -36,6 +47,7 @@ export default function ProductoFormPage() {
             precio: res.data.precio?.toString() || '',
             stock: res.data.stock?.toString() || '',
             temporada: res.data.temporada || 'alta',
+            imagenUrl: res.data.imagenUrl || '',
           });
         } catch (err) {
           setError('No se pudo cargar el producto');
@@ -45,7 +57,11 @@ export default function ProductoFormPage() {
       };
       fetchProducto();
     }
-  }, [id]);
+  }, [producto, paramId]);
+
+  // Determinar si es edición (modal o por URL)
+  const isEdit = !!(producto && producto.id) || !!paramId;
+  const editId = producto?.id || paramId;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -60,18 +76,13 @@ export default function ProductoFormPage() {
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const token = user.token || '';
-      const payload = {
-        ...formData,
-        precio: Number(formData.precio),
-        stock: Number(formData.stock),
-      };
-      if (id) {
-        await axios.put(`/api/admin/productos/${id}`, payload, {
+      if (isEdit) {
+        await axios.put(`/api/admin/productos/${editId}`, formData, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setSuccess('¡Producto actualizado exitosamente!');
       } else {
-        await axios.post('/api/admin/productos', payload, {
+        await axios.post('/api/admin/productos', formData, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setSuccess('¡Producto creado exitosamente!');
@@ -82,9 +93,10 @@ export default function ProductoFormPage() {
           precio: '',
           stock: '',
           temporada: 'alta',
+          imagenUrl: '',
         });
       }
-      setTimeout(() => navigate('/admin/productos'), 1200);
+      if (onSuccess) onSuccess();
     } catch (err) {
       setError(err.response?.data?.error || 'Error al guardar producto');
     } finally {
@@ -93,40 +105,43 @@ export default function ProductoFormPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6 text-center">{id ? 'Editar Producto' : 'Registro de Producto'}</h1>
-      {error && <div className="bg-red-100 text-red-700 p-2 mb-4 rounded">{error}</div>}
-      {success && <div className="bg-green-100 text-green-700 p-2 mb-4 rounded">{success}</div>}
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="max-w-lg mx-auto p-2 md:p-4 space-y-5">
+      {/* El título solo se muestra si no es modal, el modal ya lo muestra */}
+      {!isModal && (
+        <h1 className="text-3xl font-extrabold mb-8 text-center text-blue-700">{isEdit ? 'Editar Producto' : 'Registro de Producto'}</h1>
+      )}
+      {error && <div className="bg-red-100 text-red-700 p-3 mb-4 rounded-lg border border-red-200 text-center font-semibold">{error}</div>}
+      {success && <div className="bg-green-100 text-green-700 p-3 mb-4 rounded-lg border border-green-200 text-center font-semibold">{success}</div>}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block mb-1">Código*</label>
+          <label className="block mb-1 font-semibold text-gray-700">Código*</label>
           <input
             type="text"
             name="codigo"
             value={formData.codigo}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className="w-full p-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:outline-none text-lg"
             required
           />
         </div>
         <div>
-          <label className="block mb-1">Nombre*</label>
+          <label className="block mb-1 font-semibold text-gray-700">Nombre*</label>
           <input
             type="text"
             name="nombre"
             value={formData.nombre}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className="w-full p-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:outline-none text-lg"
             required
           />
         </div>
         <div>
-          <label className="block mb-1">Categoría*</label>
+          <label className="block mb-1 font-semibold text-gray-700">Categoría*</label>
           <select
             name="categoria"
             value={formData.categoria}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className="w-full p-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:outline-none text-lg"
             required
           >
             <option value="Tecnología">Tecnología</option>
@@ -136,37 +151,37 @@ export default function ProductoFormPage() {
           </select>
         </div>
         <div>
-          <label className="block mb-1">Precio* (ej: 99.99)</label>
+          <label className="block mb-1 font-semibold text-gray-700">Precio* (ej: 99.99)</label>
           <input
             type="number"
             name="precio"
             step="0.01"
             value={formData.precio}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className="w-full p-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:outline-none text-lg"
             required
             min={0}
           />
         </div>
         <div>
-          <label className="block mb-1">Stock*</label>
+          <label className="block mb-1 font-semibold text-gray-700">Stock*</label>
           <input
             type="number"
             name="stock"
             value={formData.stock}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className="w-full p-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:outline-none text-lg"
             required
             min={0}
           />
         </div>
         <div>
-          <label className="block mb-1">Temporada*</label>
+          <label className="block mb-1 font-semibold text-gray-700">Temporada*</label>
           <select
             name="temporada"
             value={formData.temporada}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className="w-full p-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:outline-none text-lg"
             required
           >
             <option value="alta">Alta</option>
@@ -174,14 +189,31 @@ export default function ProductoFormPage() {
             <option value="baja">Baja</option>
           </select>
         </div>
+        <div className="md:col-span-2">
+          <label className="block mb-1 font-semibold text-gray-700">Imagen (URL)*</label>
+          <input
+            type="url"
+            name="imagenUrl"
+            value={formData.imagenUrl}
+            onChange={handleChange}
+            className="w-full p-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:outline-none text-lg"
+            placeholder="https://..."
+            required
+          />
+          {formData.imagenUrl && (
+            <img src={formData.imagenUrl} alt="Vista previa" className="mt-3 h-36 object-contain border rounded-xl mx-auto shadow" onError={e => (e.currentTarget.style.display = 'none')} />
+          )}
+        </div>
+      </div>
+      <div className="pt-4">
         <button
           type="submit"
-          className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:opacity-60"
+          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl text-lg font-bold shadow hover:from-blue-700 hover:to-indigo-700 transition-colors disabled:opacity-60"
           disabled={loading}
         >
-          {loading ? 'Guardando...' : id ? 'Actualizar Producto' : 'Registrar Producto'}
+          {loading ? 'Guardando...' : isEdit ? 'Actualizar Producto' : 'Registrar Producto'}
         </button>
-      </form>
-    </div>
+      </div>
+    </form>
   );
 }
